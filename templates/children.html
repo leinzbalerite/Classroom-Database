@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Children</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Children Management</h1>
+
+    <!-- Form for adding or updating a child -->
+    <form id="childForm">
+        <input type="hidden" id="childId" name="childId"> <!-- Hidden input for ID in case of update -->
+        <label for="childFirstname">First Name:</label>
+        <input type="text" id="childFirstname" name="childFirstname" required>
+        <label for="childLastname">Last Name:</label>
+        <input type="text" id="childLastname" name="childLastname" required>
+        <label for="childAge">Age:</label>
+        <input type="number" id="childAge" name="childAge" required>
+        <label for="childRoom">Room ID:</label>
+        <input type="number" id="childRoom" name="childRoom" required>
+        <button type="submit">Submit</button>
+    </form>
+
+    <!-- Table for displaying children -->
+    <table id="childrenTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Age</th>
+                <th>Room ID</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script>
+        document.getElementById('childForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const childId = document.getElementById('childId').value;
+    const firstname = document.getElementById('childFirstname').value;
+    const lastname = document.getElementById('childLastname').value;
+    const age = document.getElementById('childAge').value;
+    const room = document.getElementById('childRoom').value;
+    const method = childId ? 'PUT' : 'POST'; // Determine method based on presence of id
+    const apiUrl = childId ? `/api/child/${childId}` : '/api/child';
+
+    fetch(apiUrl, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ firstname: firstname, lastname: lastname, age: age, room_id: room })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert('Child saved successfully!');
+        loadChildren(); // Reload the list of children
+    })
+    .catch(error => console.error('Error:', error));
+});
+
+function loadChildren() {
+    fetch('/api/child')
+        .then(response => response.json())
+        .then(data => {
+            const tableBody = document.getElementById('childrenTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = ''; // Clear existing rows
+            data.forEach(child => {
+                let row = tableBody.insertRow();
+                row.insertCell(0).textContent = child.id;
+                row.insertCell(1).textContent = child.firstname;
+                row.insertCell(2).textContent = child.lastname;
+                row.insertCell(3).textContent = child.age;
+                row.insertCell(4).textContent = child.room_id;
+                let actionsCell = row.insertCell(5);
+                let editButton = document.createElement('button');
+                editButton.textContent = 'Edit';
+                editButton.onclick = function() { editChild(child.id, child.firstname, child.lastname, child.age, child.room_id); };
+                let deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.onclick = function() { deleteChild(child.id); };
+                actionsCell.appendChild(editButton);
+                actionsCell.appendChild(deleteButton);
+            });
+        })
+        .catch(error => console.error('Error loading children:', error));
+}
+
+function editChild(id, firstname, lastname, age, room) {
+    document.getElementById('childId').value = id;
+    document.getElementById('childFirstname').value = firstname;
+    document.getElementById('childLastname').value = lastname;
+    document.getElementById('childAge').value = age;
+    document.getElementById('childRoom').value = room;
+}
+
+function deleteChild(id) {
+    if (confirm('Are you sure you want to delete this child?')) {
+        fetch(`/api/child/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                alert('Child deleted successfully');
+                loadChildren(); // Reload the list
+            } else {
+                alert('Failed to delete child');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+}
+
+// Load children when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadChildren();
+});
+
+    </script>
+</body>
+</html>

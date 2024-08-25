@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Teachers</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Teachers Management</h1>
+
+    <!-- Form for adding or updating a teacher -->
+    <form id="teacherForm">
+        <input type="hidden" id="teacherId" name="teacherId"> <!-- Hidden input for ID in case of update -->
+        <label for="teacherFirstname">First Name:</label>
+        <input type="text" id="teacherFirstname" name="teacherFirstname" required>
+        <label for="teacherLastname">Last Name:</label>
+        <input type="text" id="teacherLastname" name="teacherLastname" required>
+        <label for="teacherRoom">Room:</label>
+        <input type="text" id="teacherRoom" name="teacherRoom" required>
+        <button type="submit">Submit</button>
+    </form>
+
+    <!-- Table for displaying teachers -->
+    <table id="teachersTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Room</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script>
+        // Function to load teachers from the server and display them in the table
+        function loadTeachers() {
+            fetch('/api/teacher')
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('teachersTable').getElementsByTagName('tbody')[0];
+                    tableBody.innerHTML = ''; // Clear existing rows
+                    data.forEach(teacher => {
+                        let row = tableBody.insertRow();
+                        row.insertCell(0).textContent = teacher.id;
+                        row.insertCell(1).textContent = teacher.firstname;
+                        row.insertCell(2).textContent = teacher.lastname;
+                        row.insertCell(3).textContent = teacher.room_id;
+                        let actionsCell = row.insertCell(4);
+                        let editButton = document.createElement('button');
+                        editButton.textContent = 'Edit';
+                        editButton.onclick = function() { editTeacher(teacher.id, teacher.firstname, teacher.lastname, teacher.room_id); };
+                        let deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Delete';
+                        deleteButton.onclick = function() { deleteTeacher(teacher.id); };
+                        actionsCell.appendChild(editButton);
+                        actionsCell.appendChild(deleteButton);
+                    });
+                })
+                .catch(error => console.error('Error loading teachers:', error));
+        }
+
+        // Function to handle form submission for adding or updating a teacher
+        document.getElementById('teacherForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const teacherId = document.getElementById('teacherId').value;
+            const teacherFirstname = document.getElementById('teacherFirstname').value;
+            const teacherLastname = document.getElementById('teacherLastname').value;
+            const teacherRoom = document.getElementById('teacherRoom').value;
+            const method = teacherId ? 'PUT' : 'POST'; // Determine method based on presence of id
+            const apiUrl = teacherId ? `/api/teacher/${teacherId}` : '/api/teacher';
+
+            fetch(apiUrl, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ firstname: teacherFirstname, lastname: teacherLastname, room_id: teacherRoom })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Teacher saved successfully!');
+                loadTeachers(); // Reload the list of teachers
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        // Function to populate form fields with teacher data for editing
+        function editTeacher(id, firstname, lastname, room_id) {
+            document.getElementById('teacherId').value = id;
+            document.getElementById('teacherFirstname').value = firstname;
+            document.getElementById('teacherLastname').value = lastname;
+            document.getElementById('teacherRoom').value = room_id;
+        }
+
+        // Function to delete a teacher
+        function deleteTeacher(id) {
+            if (confirm('Are you sure you want to delete this teacher?')) {
+                fetch(`/api/teacher/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Teacher deleted successfully');
+                        loadTeachers(); // Reload the list
+                    } else {
+                        alert('Failed to delete teacher');
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        }
+
+        // Load teachers when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTeachers();
+        });
+    </script>
+</body>
+</html>

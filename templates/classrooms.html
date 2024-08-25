@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Classrooms</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Classrooms Management</h1>
+
+    <!-- Form for adding or updating a classroom -->
+    <form id="classroomForm">
+        <input type="hidden" id="classroomId" name="classroomId"> <!-- Hidden input for ID in case of update -->
+        <label for="className">Classroom Name:</label>
+        <input type="text" id="className" name="className" required>
+        <label for="classCapacity">Capacity:</label>
+        <input type="number" id="classCapacity" name="classCapacity" required>
+        <label for="classFacility">Facility ID:</label>
+        <input type="number" id="classFacility" name="classFacility" required>
+        <button type="submit">Submit</button>
+    </form>
+
+    <!-- Table for displaying classrooms -->
+    <table id="classroomsTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Capacity</th>
+                <th>Facility ID</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <!-- JavaScript code for handling form submission and table population -->
+    <script>
+    // Function to handle form submission
+    document.getElementById('classroomForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const classroomId = document.getElementById('classroomId').value;
+        const className = document.getElementById('className').value;
+        const classCapacity = document.getElementById('classCapacity').value;
+        const classFacility = document.getElementById('classFacility').value;
+        const method = classroomId ? 'PUT' : 'POST'; // Determine method based on presence of id
+        const apiUrl = classroomId ? `/api/classroom/${classroomId}` : '/api/classroom';
+
+        fetch(apiUrl, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: className, capacity: classCapacity, facility: classFacility })
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('Classroom saved successfully!');
+            loadClassrooms(); // Reload the list of classrooms
+        })
+        .catch(error => console.error('Error:', error));
+    });
+
+    // Function to load classrooms
+    function loadClassrooms() {
+        fetch('/api/classroom')
+            .then(response => response.json())
+            .then(data => {
+                const tableBody = document.getElementById('classroomsTable').getElementsByTagName('tbody')[0];
+                tableBody.innerHTML = ''; // Clear existing rows
+                data.forEach(classroom => {
+                    let row = tableBody.insertRow();
+                    row.insertCell(0).textContent = classroom.id;
+                    row.insertCell(1).textContent = classroom.name;
+                    row.insertCell(2).textContent = classroom.capacity;
+                    row.insertCell(3).textContent = classroom.facility_id;
+                    let actionsCell = row.insertCell(4);
+                    let editButton = document.createElement('button');
+                    editButton.textContent = 'Edit';
+                    editButton.onclick = function() { editClassroom(classroom.id, classroom.name, classroom.capacity, classroom.facility_id); };
+                    let deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'Delete';
+                    deleteButton.onclick = function() { deleteClassroom(classroom.id); };
+                    actionsCell.appendChild(editButton);
+                    actionsCell.appendChild(deleteButton);
+                });
+            })
+            .catch(error => console.error('Error loading classrooms:', error));
+    }
+
+    // Function to edit a classroom
+    function editClassroom(id, name, capacity, facility) {
+        document.getElementById('classroomId').value = id;
+        document.getElementById('className').value = name;
+        document.getElementById('classCapacity').value = capacity;
+        document.getElementById('classFacility').value = facility;
+    }
+
+    // Function to delete a classroom
+    function deleteClassroom(id) {
+        if (confirm('Are you sure you want to delete this classroom?')) {
+            fetch(`/api/classroom/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Classroom deleted successfully');
+                    loadClassrooms(); // Reload the list
+                } else {
+                    alert('Failed to delete classroom');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    }
+
+    // Load classrooms when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        loadClassrooms();
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Facilities</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        button {
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Facilities Management</h1>
+
+    <!-- Form for adding or updating a facility -->
+    <form id="facilityForm">
+        <input type="hidden" id="facilityId" name="facilityId"> <!-- Hidden input for ID in case of update -->
+        <label for="facilityName">Facility Name:</label>
+        <input type="text" id="facilityName" name="facilityName" required>
+        <button type="submit">Submit</button>
+    </form>
+
+    <!-- Table for displaying facilities -->
+    <table id="facilitiesTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script>
+    document.getElementById('facilityForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const facilityId = document.getElementById('facilityId').value;
+        const facilityName = document.getElementById('facilityName').value;
+        const method = facilityId ? 'PUT' : 'POST'; // Determine method based on presence of id
+        const apiUrl = facilityId ? `/api/facility/${facilityId}` : '/api/facility';
+
+        fetch(apiUrl, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: facilityName })
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message); // Display response message
+            if (!facilityId) {
+                document.getElementById('facilityId').value = data.id; // Update ID field with new ID
+                addFacilityToTable(data.id, facilityName); // Add the new facility to the table with the new ID
+            } else {
+                loadFacilities(); // Reload the list of facilities for updates
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+
+    function addFacilityToTable(id, name) {
+        const tableBody = document.getElementById('facilitiesTable').getElementsByTagName('tbody')[0];
+        let newRow = tableBody.insertRow();
+        newRow.insertCell(0).textContent = id; // New ID added to the table
+        newRow.insertCell(1).textContent = name;
+        let actionsCell = newRow.insertCell(2);
+        let editButton = document.createElement('button');
+        editButton.textContent = 'Edit';
+        editButton.onclick = function() { editFacility(id, name); };
+        let deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.onclick = function() { deleteFacility(id); };
+        actionsCell.appendChild(editButton);
+        actionsCell.appendChild(deleteButton);
+    }
+
+        function loadFacilities() {
+            fetch('/api/facility')
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('facilitiesTable').getElementsByTagName('tbody')[0];
+                    tableBody.innerHTML = ''; // Clear existing rows
+                    data.forEach(facility => {
+                        let row = tableBody.insertRow();
+                        row.insertCell(0).textContent = facility.id;
+                        row.insertCell(1).textContent = facility.name;
+                        let actionsCell = row.insertCell(2);
+                        let editButton = document.createElement('button');
+                        editButton.textContent = 'Edit';
+                        editButton.onclick = function() { editFacility(facility.id, facility.name); };
+                        let deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Delete';
+                        deleteButton.onclick = function() { deleteFacility(facility.id); };
+                        actionsCell.appendChild(editButton);
+                        actionsCell.appendChild(deleteButton);
+                    });
+                })
+                .catch(error => console.error('Error loading facilities:', error));
+        }
+
+        function editFacility(id, name) {
+            document.getElementById('facilityId').value = id;
+            document.getElementById('facilityName').value = name;
+        }
+
+        function deleteFacility(id) {
+            if (confirm('Are you sure you want to delete this facility?')) {
+                fetch(`/api/facility/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message); // Display response message
+                    loadFacilities(); // Reload the list
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        }
+
+        // Load facilities when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFacilities();
+        });
+    </script>
+</body>
+</html>
